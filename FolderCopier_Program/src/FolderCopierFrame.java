@@ -8,7 +8,6 @@ import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.JCheckBox;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
@@ -21,7 +20,6 @@ import java.io.OutputStream;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.prefs.Preferences;
 import javax.swing.JScrollPane;
 
 public class FolderCopierFrame extends JFrame {
@@ -32,10 +30,6 @@ public class FolderCopierFrame extends JFrame {
     private JTextField textFieldPrefix;
     private List<JTextField> destinationFields;
     private JPanel destinationPanel;
-
-    // Preference key to remember user choice
-    private static final String PREF_KEY_DO_NOT_ASK_AGAIN = "doNotAskAgain";
-    private Preferences prefs;
 
     /**
      * Launch the application.
@@ -57,7 +51,7 @@ public class FolderCopierFrame extends JFrame {
      * Create the frame.
      */
     public FolderCopierFrame() {
-        prefs = Preferences.userNodeForPackage(FolderCopierFrame.class);
+        setTitle("[Abhijay] - Folder Copier");
         destinationFields = new ArrayList<>();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -124,7 +118,7 @@ public class FolderCopierFrame extends JFrame {
         txtrPrefix.setBounds(10, 374, 414, 30);
         txtrPrefix.setRows(1);
         txtrPrefix.setFont(new Font("Yu Gothic UI Semibold", Font.PLAIN, 14));
-        txtrPrefix.setText("File Prefix:");
+        txtrPrefix.setText("File Prefix (Optional):");
         contentPane.add(txtrPrefix);
 
         textFieldPrefix = new JTextField();
@@ -141,8 +135,8 @@ public class FolderCopierFrame extends JFrame {
                 String srcPath = textFieldSource.getText();
                 String prefix = textFieldPrefix.getText();
 
-                if (srcPath.isEmpty() || prefix.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Please fill in all fields.");
+                if (srcPath.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Please fill in the source path.");
                     return;
                 }
 
@@ -160,13 +154,6 @@ public class FolderCopierFrame extends JFrame {
                     return;
                 }
 
-                // Prompt for the new folder name for each destination
-                String newFolderName = JOptionPane.showInputDialog("Enter the name for the new folder:");
-                if (newFolderName == null || newFolderName.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "New folder name cannot be empty.");
-                    return;
-                }
-
                 File srcDir = new File(srcPath);
 
                 if (!srcDir.exists()) {
@@ -179,7 +166,7 @@ public class FolderCopierFrame extends JFrame {
                 boolean hasConflictingFiles = false;
 
                 for (String destPath : destPaths) {
-                    File destDir = new File(destPath, newFolderName); // Create new folder in destination
+                    File destDir = new File(destPath); // Use the entire path as the destination
                     hasConflictingFiles |= folderCopier.checkForConflictingFiles(srcDir, destDir, prefix);
                 }
 
@@ -199,57 +186,10 @@ public class FolderCopierFrame extends JFrame {
 
                 try {
                     for (String destPath : destPaths) {
-                        File destDir = new File(destPath, newFolderName);
+                        File destDir = new File(destPath);
                         folderCopier.copyDir(srcDir, destDir, prefix, overwrite);
                     }
                     JOptionPane.showMessageDialog(null, "Copied successfully.");
-
-                    if (!prefs.getBoolean(PREF_KEY_DO_NOT_ASK_AGAIN, false)) {
-                        JPanel panel = new JPanel();
-                        JCheckBox checkBox = new JCheckBox("Do not ask again");
-                        panel.add(checkBox);
-
-                        int deleteOption = JOptionPane.showConfirmDialog(null, 
-                            new Object[] { 
-                                "Would you like to delete the copied folder now?", 
-                                checkBox 
-                            }, 
-                            "Delete Copied Folder", 
-                            JOptionPane.YES_NO_OPTION);
-
-                        if (checkBox.isSelected()) {
-                            prefs.putBoolean(PREF_KEY_DO_NOT_ASK_AGAIN, true);
-                        }
-
-                        if (deleteOption == JOptionPane.YES_OPTION) {
-                            for (String destPath : destPaths) {
-                                File destDir = new File(destPath, newFolderName);
-                                boolean isDeleted = folderCopier.deleteDir(destDir);
-                                if (isDeleted) {
-                                    JOptionPane.showMessageDialog(null, "Copied folder deleted successfully.");
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Failed to delete the copied folder.");
-                                }
-                            }
-                        }
-                    } else {
-                        int deleteOption = JOptionPane.showConfirmDialog(null, 
-                            "Would you like to delete the copied folder now?", 
-                            "Delete Copied Folder", 
-                            JOptionPane.YES_NO_OPTION);
-
-                        if (deleteOption == JOptionPane.YES_OPTION) {
-                            for (String destPath : destPaths) {
-                                File destDir = new File(destPath, newFolderName);
-                                boolean isDeleted = folderCopier.deleteDir(destDir);
-                                if (isDeleted) {
-                                    JOptionPane.showMessageDialog(null, "Copied folder deleted successfully.");
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Failed to delete the copied folder.");
-                                }
-                            }
-                        }
-                    }
                 } catch (IOException ex) {
                     JOptionPane.showMessageDialog(null, "An error occurred: " + ex.getMessage());
                 }
@@ -297,19 +237,19 @@ public class FolderCopierFrame extends JFrame {
     class FolderCopier {
 
         public void copyDir(File src, File dest, String prefix, boolean overwrite) throws IOException {
-            if (src.isDirectory()) {
-                if (!dest.exists()) {
-                    dest.mkdir();
-                }
+            if (!dest.exists()) {
+                dest.mkdirs(); // Create all necessary directories
+            }
 
+            if (src.isDirectory()) {
                 String[] files = src.list();
                 if (files != null) {
                     for (String fileName : files) {
                         File srcFile = new File(src, fileName);
-                        File destFile = new File(dest, prefix + fileName);
+                        File destFile = new File(dest, (prefix != null ? prefix : "") + fileName);
 
                         if (srcFile.isDirectory()) {
-                            copyDir(srcFile, new File(dest, fileName), prefix, overwrite);
+                            copyDir(srcFile, destFile, prefix, overwrite);
                         } else {
                             if (destFile.exists() && !overwrite) {
                                 continue; // Skip existing files if not overwriting
@@ -335,23 +275,11 @@ public class FolderCopierFrame extends JFrame {
             }
         }
 
-        public boolean deleteDir(File dir) {
-            if (dir.isDirectory()) {
-                File[] files = dir.listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        deleteDir(file);
-                    }
-                }
-            }
-            return dir.delete();
-        }
-
         public boolean checkForConflictingFiles(File srcDir, File destDir, String prefix) {
             String[] files = srcDir.list();
             if (files != null) {
                 for (String fileName : files) {
-                    File destFile = new File(destDir, prefix + fileName);
+                    File destFile = new File(destDir, (prefix != null ? prefix : "") + fileName);
                     if (destFile.exists()) {
                         return true;
                     }
