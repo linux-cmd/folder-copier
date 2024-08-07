@@ -10,6 +10,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JCheckBox;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,6 +22,7 @@ import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;
+import javax.swing.JScrollPane;
 
 public class FolderCopierFrame extends JFrame {
 
@@ -59,7 +61,7 @@ public class FolderCopierFrame extends JFrame {
         destinationFields = new ArrayList<>();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 600, 550);
+        setBounds(100, 100, 600, 600); // Increased height to accommodate more fields
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(contentPane);
@@ -94,12 +96,18 @@ public class FolderCopierFrame extends JFrame {
             }
         });
 
-        destinationPanel = new JPanel();
-        destinationPanel.setBounds(10, 82, 560, 250);
-        destinationPanel.setLayout(null);
-        contentPane.add(destinationPanel);
+        // Create a scroll pane for the destination panel
+        JScrollPane scrollPane = new JScrollPane();
+        scrollPane.setBounds(10, 82, 560, 250);
+        contentPane.add(scrollPane);
 
-        addDestinationField();
+        // Destination panel inside the scroll pane
+        destinationPanel = new JPanel();
+        destinationPanel.setLayout(null);
+        scrollPane.setViewportView(destinationPanel);
+        destinationPanel.setPreferredSize(new Dimension(550, 250)); // Initial size, will increase as fields are added
+
+        addDestinationField(); // Initial destination field
 
         JButton btnAddDestination = new JButton("Add Destination");
         btnAddDestination.setBounds(10, 334, 150, 30);
@@ -250,7 +258,8 @@ public class FolderCopierFrame extends JFrame {
     }
 
     private void addDestinationField() {
-        int yOffset = destinationFields.size() * 70; // Increased space between destination bars
+        int yOffset = destinationFields.size() * 70; // Increased spacing between fields
+        destinationPanel.setPreferredSize(new Dimension(550, yOffset + 100));
 
         JTextArea txtrDestination = new JTextArea();
         txtrDestination.setBackground(new Color(240, 240, 240));
