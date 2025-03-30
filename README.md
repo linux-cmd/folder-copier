@@ -34,4 +34,4 @@ A Java-based GUI application for copying folders with optional file prefixes and
 MIT
 
 ### Contribution
-Feel free to make a pull request. [Read the contribution guidelines](#) for more information.
+Feel free to make a pull request.
